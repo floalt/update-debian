@@ -6,18 +6,12 @@
 #   Dieses Script führt 'apt-get update', 'apt-get upgrade' und 'apt-get dist-upgrade' aus.
 #   Es werden Protokolldateien abgelegt, aber nur im Fehlerfall per Mail verschickt.
 # author: flo.alt@fa-netz.de
-# version: 0.9.1
+# version: 0.9.2
 
-## Variablen definieren ##
+# see updateconfig to configure this script
 
-# Hier Konfigurieren:
+source updateconfig
 
-LOGTIME=<Tage>					# Logratation (in Tagen)
-CUSTOMER="<Kundenname>"				# Kunden-Name
-SENDTO="<Mailadresse>"			# Empfänger für das Error-Log
-
-SCRIPTPATH="/usr/local/scripts/update"          # Pfad von diesem Script
-LOGDIR="/var/log/apt-updates"                   # Log-Verzeichnis
 STARTUPD="$(date +%d.%m.%Y-%H:%M)"              # Zeitstempel
 LOGFILE="$LOGDIR"/update-"$STARTUPD".log        # Logfile
 ERRFILE="$LOGDIR"/error-"$STARTUPD".log		# Error-File

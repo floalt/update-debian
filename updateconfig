@@ -1,0 +1,16 @@
+# configfile for update.sh
+
+# logrotation in days
+LOGTIME=90
+
+# customer name (short form)
+CUSTOMER="company"
+
+# email error-log is sent to
+SENDTO="alert@company.com"
+
+# enter the path of the folder containing this script
+SCRIPTPATH="/usr/local/scripts/update"
+
+# here are the logfiles
+LOGDIR="/var/log/apt-updates"
