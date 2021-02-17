@@ -5,108 +5,112 @@
 # description:
 #   Dieses Script führt 'apt-get update', 'apt-get upgrade' und 'apt-get dist-upgrade' aus.
 #   Es werden Protokolldateien abgelegt, aber nur im Fehlerfall per Mail verschickt.
+#
+#   Konfiguration: siehe Datei 'updateconfig'
+#
 # author: flo.alt@fa-netz.de
-# version: 0.9.2
+# version: 1.0.0
 
-# see updateconfig to configure this script
 
-source updateconfig
+# Configfile einlesen:
+SCRIPTPATH=$(dirname "$(readlink -e "$0")")
+source $SCRIPTPATH/updateconfig
+
+
+
+# Feste Variablen
 
 STARTUPD="$(date +%d.%m.%Y-%H:%M)"              # Zeitstempel
 LOGFILE="$LOGDIR"/update-"$STARTUPD".log        # Logfile
 ERRFILE="$LOGDIR"/error-"$STARTUPD".log		# Error-File
 HOST=$(cat /etc/hostname)			# Hostname
 ERRORMARKER=0					# Anfangswert für Errormarker
+ERRTMP1=/tmp/errfile1		# temp. Error-File für Update
+ERRTMP2=/tmp/errfile2		# temp. Error-File für Upgrade
+ERRTMP3=/tmp/errfile3		# temp. Error-File für Dist-Upgrade
+ERRTMP4=/tmp/errfile4		# temp. Error-File für Autoremove
 
-# Voraussetzungen schaffen
+
+# Funktion: Errorcheck
+
+errorcheck() {
+	if [[ ! -s $1 ]]; then
+	    echo -e "\nOK: $2 erfolgreich durchgeführt\n" >> $LOGFILE
+	 else
+	    echo -e "\nFEHLER: Problem beim $2 aufgetreten\n" >> $LOGFILE
+	    echo -e "\nFEHLER: Problem beim $2 aufgetreten\n" >> $ERRFILE
+	    cat $1 >> $ERRFILE
+	    ((ERRORMARKER++))
+	fi
+	rm $1
+}
+
+
+
+### Voraussetzungen schaffen
 
 if [ ! -d $LOGDIR ]; then mkdir -p $LOGDIR; fi
-
-# Update durchführen
-
 touch $SCRIPTPATH/lastupdate-start
+
+# alte errortemp-files löschen
+touch /tmp/errfile
+VAR1="$(ls /tmp/errfile*)"
+for i in "$VAR1"; do rm $i; done
+
+# Logfile erstellen
 
 (
 echo -e "Protokolldatei vom täglichen Betriebssystem-Update"
 echo -e "ausgeführt von $SCRIPTPATH/update.sh\n"
 echo -e "Update gestartet $STARTUPD\n"
+) | tee > $LOGFILE
+
+
+
+
+### Update durchführen
 
 # Aktualisieren der Paketlisten
-echo -e "--== Paketlisten updaten... ==--\n"
-apt-get update
-ERROR=$?
-echo $ERROR > er-upd
-echo ""
-) | tee $LOGFILE
+echo -e "--== Paketlisten updaten... ==--\n" >> $LOGFILE
+apt-get update >> $LOGFILE 2>> $ERRTMP1
+errorcheck $ERRTMP1 "Aktualisieren der Paketlisten"
 
-if [[ $ERROR -eq 0 ]]; then
-    echo -e "OK: Paketlisten erfolgreich aktualisiert\n" >> $LOGFILE
- else
-    echo -e "FEHLER: Problem beim aktualisiseren der Paketlisten aufgetreten\n" >> $LOGFILE
-    echo -e "FEHLER: Problem beim aktualisiseren der Paketlisten aufgetreten\n" >> $ERRFILE
-    ((ERRORMARKER++))
-fi
-(
 
 # Installieren der Updates
-echo -e "==-- Upgrade durchführen... --==\n"
-apt-get upgrade -y
-ERROR=$?
-echo ""
-) | tee >> $LOGFILE
+echo -e "==-- Upgrade durchführen... --==\n" >> $LOGFILE
+apt-get upgrade -y >> $LOGFILE 2>> $ERRTMP2
+# apt-get install FehlerProvozieren -y >> $LOGFILE 2>> $ERRTMP2
+errorcheck $ERRTMP2 "Installieren der Upgrades"
 
-if [[ $ERROR -eq 0 ]]; then
-    echo -e "OK: Updates erfolgreich installiert\n" >> $LOGFILE
- else
-    echo -e "FEHLER: Problem beim Installieren der Updates aufgetreten\n" >> $LOGFILE
-    echo -e "FEHLER: Problem beim Installieren der Updates aufgetreten\n" >> $ERRFILE
-    ((ERRORMARKER++))
-fi
-
-(
 
 # Installieren der Dist-Updates
-echo -e "--== Dist-Upgrade durchführen... ==--\n"
-apt-get dist-upgrade -y
-ERROR=$?
-echo ""
-) | tee >> $LOGFILE
+echo -e "--== Dist-Upgrade durchführen... ==--\n" >> $LOGFILE
+apt-get dist-upgrade -y >> $LOGFILE 2>> $ERRTMP3
+errorcheck $ERRTMP3 "Installieren der Dist-Upgrades"
 
-if [[ $ERROR -eq 0 ]]; then
-    echo -e "OK: Dist-Upgrades erfolgreich installiert\n" >> $LOGFILE
- else
-    echo -e "FEHLER: Problem beim Installieren der Dist-Upgrades aufgetreten\n" >> $LOGFILE
-    echo -e "FEHLER: Problem beim Installieren der Dist-Upgrades aufgetreten\n" >> $ERRFILE
-    ((ERRORMARKER++))
-fi
-
-(
 
 # Autoremove
-echo -e "--== Autoremove durchführen... ==--\n"
-apt-get autoremove -y
-ERROR=$?
-echo ""
-) | tee >> $LOGFILE
+echo -e "--== Autoremove durchführen... ==--\n" >> $LOGFILE
+apt-get autoremove -y >> $LOGFILE 2>> $ERRTMP4
+errorcheck $ERRTMP4 "Autoremove"
 
-if [[ $ERROR -eq 0 ]]; then
-    echo -e "OK: Autoremove erfolgreich durchgeführt\n" >> $LOGFILE
- else
-    echo -e "FEHLER: Problem beim Autoremove\n" >> $LOGFILE
-    echo -e "FEHLER: Problem beim Autoremove\n" >> $ERRFILE
-    ((ERRORMARKER++))
-fi
 
-# Update beenden, Logfile, Errorfile
+
+
+### Update beenden, Logfile, Errorfile
+
 (
 echo -e "Update Beendet $(date +%d.%m.%Y-%H:%M)\n"
 echo "ENDE: Update wurde beendet"
 ) | tee >> $LOGFILE
 
+
+# Logfiles managen
 cp "$LOGFILE" $LOGDIR/lastupdate.log			# aktuelles Logfile fürs Monitoring kopieren
 find "$LOGDIR"/* -mtime +$LOGTIME -exec rm {} +         # Logdateien, älter als $LOGTIME löschen
 touch $SCRIPTPATH/lastupdate-stop                       # Marker-File für Backup-Ende setzen
 
+# Error managen und Mail verschicken
 if [[ "$ERRORMARKER" -gt 0 ]]; then
     echo "Error-Log wird gebaut und verschickt..."
     echo -e "\n\nHier das Logfile:\n" >> $ERRFILE
