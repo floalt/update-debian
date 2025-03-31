@@ -7,7 +7,7 @@
 #   If desired, Docker containers will be stopped before the update.
 #   Log files are created, but emails are only sent in case of errors.
 #
-#   Configuration: See the 'aptupdate.conf' file.
+#   Configuration: See the 'update.conf' file.
 #
 # Author: flo.alt@fa-netz.de
 # Version: 2.0
