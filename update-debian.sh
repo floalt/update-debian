@@ -10,7 +10,7 @@
 #   Configuration: See the 'update-debian.conf' file.
 #
 # Author: flo.alt@fa-netz.de
-# Version: 2.0
+# Version: 2.1
 
 
 # Variables and Configuration
