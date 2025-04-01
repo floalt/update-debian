@@ -7,7 +7,7 @@
 #   If desired, Docker containers will be stopped before the update.
 #   Log files are created, but emails are only sent in case of errors.
 #
-#   Configuration: See the 'update.conf' file.
+#   Configuration: See the 'update-debian.conf' file.
 #
 # Author: flo.alt@fa-netz.de
 # Version: 2.0
@@ -16,7 +16,7 @@
 # Variables and Configuration
 
     SCRIPTPATH=$(dirname "$(readlink -e "$0")")
-    source $SCRIPTPATH/aptupdate.conf
+    source $SCRIPTPATH/update-debian.conf
 
     STARTUPD="$(date +%Y-%m-%d_%H-%M-%S)"
     LOGFILE="$LOGDIR/update-$STARTUPD.log"
