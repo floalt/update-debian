@@ -149,4 +149,3 @@
 # Final steps
 
     logfile_mgmt
-    echo "All OK"
